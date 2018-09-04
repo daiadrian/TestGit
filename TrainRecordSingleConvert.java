@@ -21,7 +21,6 @@ import java.util.Vector;
  */
 public class TrainRecordSingleConvert {
 
-    //private static long START_TIME = 1493568000000L; // 开始时间
     private static long START_TIME = 1531756800000L; // 开始时间
     private static long END_TIME = 0;   //结束时间
     private static long END_FIRST_TIME = 1531843200000L;   //一次执行一天
@@ -113,20 +112,18 @@ public class TrainRecordSingleConvert {
                 END_FIRST_TIME += DAY_HOURS;
             }
         } catch (Exception ex) {
-            logger.error("---------->导入ES的电子教学日志出现异常 :" + ex.getMessage());
+            logger.error(ex.getMessage());
             return;
         }
     }
 
     /**
-     * 批量插入电子日志
      *
      * @return
      */
     public static long batchInsertTrainRecordSingle(List<TrainRecordSingleReturnEntity> select, List<Long> ids) {
         Object[] object = new Object[]{null};
         String s = TrainRecordSingleConvert.packageBatchInsertJsonByEntity(select);
-//        long re = ESUtils.putDocuments("jp_train_record_single", s, object, ids);
         return CommandMessage.success;
     }
 
@@ -152,15 +149,13 @@ public class TrainRecordSingleConvert {
         ESResponse esResponse = JsonHelper.ToObject((String) object[0], ESResponse.class);
         if (CommandMessage.exception == re) {
             //发生异常的处理
-            logger.error("---------->导入ES的电子教学日志出现异常");
-            logger.error("------->出现异常的电子日志记录数据id为： （" + entity._id + "）");
+            logger.error("（" + entity._id + "）");
         }
 
         if (esResponse.errors) {
             logger.error("---------->---------------------------->>>>object[0]");
             //插入失败的处理
-            logger.error("---------->导入ES的电子教学日志失败");
-            logger.error("------->失败的电子日志记录数据id为： （" + entity._id + "）");
+            logger.error("（" + entity._id + "）");
         }
         return CommandMessage.success;
 
