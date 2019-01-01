@@ -13,9 +13,6 @@ package com.dai.sort;
 //这个是大顶堆的实现：
 public class HeapifySort {
 
-    /**
-     * 堆排序要建立在arrays已经是大根堆的情况下
-     */
     public static void heapify(Integer[] arrays, int currentNode, int size) {
         if (currentNode < size) {
             //获取当前节点位置上的 左、右节点
@@ -67,6 +64,7 @@ public class HeapifySort {
         }
         //建立一个大根堆
         maxHeapify(arrays, arrays.length - 1);
+		//堆排序要建立在arrays已经是大根堆的情况下,所以上面需要进行一次堆排得到大根堆
         //大根堆的第一个元素就是最大值，将最大值与最后位置上的值进行交换后，再进行堆排序
         for (int i = arrays.length - 1; i > 0; i--) {
             int temp = arrays[0];
