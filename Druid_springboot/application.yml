@@ -14,7 +14,6 @@ spring:
       max-pool-prepared-statement-per-connection-size: 20   #指定每个连接上PSCache的大小
       time-between-eviction-runs-millis: 6000               #在空闲连接回收器线程运行期间休眠的时间值
       min-evictable-idle-time-millis: 100000                # 配置一个连接在池中最小生存的时间
-      validation-query: SELECT 1 FROM DUAL                  #用来检测连接是否有效的sql
       validation-query-timeout: 60000                       #检查sql超时时间
       test-while-idle: true                                 #申请连接的时候检测
       test-on-borrow: false                                 #申请连接时执行validationQuery检测连接是否有效
