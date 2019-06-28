@@ -21,7 +21,7 @@ public class MyMergeSort {
 
     public static void main(String[] args) {
         List<Integer> integers = Arrays.asList(10, 3, 50, 20, 15, 1, 33, 31, 25);
-        List<Integer> temp = new ArrayList<>(integers.size());
+        List<Integer> temp = new ArrayList<>();
         mergeSort(integers, 0, integers.size() - 1, temp);
         integers.stream().forEach(System.out::println);
     }
@@ -72,10 +72,12 @@ public class MyMergeSort {
         while(tempLeft <= middle && right >= tempRight) {
             if (mergeList.get(tempLeft) > mergeList.get(tempRight)) {
                 //如果左边值较大, 将右边序列的值放到临时数组中
-                temp.set(tempIndex++, tempRight++);
+                temp.add(mergeList.get(tempRight++));
+                //如果是数组形式, 那么是: temp[tempIndex++] = mergeList.get(tempRight++);
             } else {
                 //否则将左边序列的值放到临时数组中
-                temp.set(tempIndex++, tempLeft++);
+                temp.add(mergeList.get(tempLeft++));
+                //如果是数组形式, 那么是: temp[tempIndex++] = mergeList.get(tempLeft++);
             }
         }
 
@@ -84,23 +86,25 @@ public class MyMergeSort {
          * 那么直接将左边序列剩下的值放入临时数组中
          */
         while (tempLeft <= middle) {
-            temp.set(tempIndex++, tempLeft++);
+            temp.add(mergeList.get(tempLeft++));
         }
 
         /**
          * 反之则将右边序列剩下的值放入临时数组中
          */
         while (right >= tempRight) {
-            temp.set(tempIndex++, tempRight++);
+            temp.add(mergeList.get(tempRight++));
         }
 
         /**
          * 将临时数组排好序的内容放回原数组中
          */
         tempIndex = 0;
-        while (tempIndex < (right - left)) {
-            mergeList.set(left++, tempIndex++);
+        while (tempIndex < temp.size()) {
+            mergeList.set(left++, temp.get(tempIndex++));
         }
+        //因为使用了临时的列表, 需要清空列表
+        temp.clear();
     }
 
 }
