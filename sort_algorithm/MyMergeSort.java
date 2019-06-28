@@ -107,4 +107,63 @@ public class MyMergeSort {
         temp.clear();
     }
 
+    /**
+     * 数组方式的治策略
+     *
+     *  治策略, 将小序列进行排序然后合并成有序的完整序列
+     *
+     * @param mergeList 源数组
+     * @param left      数组左下标值
+     * @param right     数组右下标值
+     * @param temp      临时数组
+     */
+    public static void arrayMerge(Integer[] mergeList, int left, int right, Integer[] temp) {
+        //临时数组的下标
+        int tempIndex = 0;
+        int middle = (left + right) / 2;
+        /**
+         * 两边的序列从最左边的值开始进行比较, 数组较小放在临时数组左边
+         *
+         *      因为拆分出来的序列会从最小序列开始比较得到的是一个 有序的序列
+         *      所以只需要从左往右开始比较即可
+         */
+        int tempLeft = left;
+        int tempRight = middle + 1;
+        /**
+         * 两个序列从左往右开始比较, 直至其中一边的序列完全排到临时数组中
+         */
+        while(tempLeft <= middle && right >= tempRight) {
+            if (mergeList[tempLeft] > mergeList[tempRight]) {
+                //如果左边值较大, 将右边序列的值放到临时数组中
+                temp[tempIndex++] = mergeList[tempRight++];
+            } else {
+                //否则将左边序列的值放到临时数组中
+                temp[tempIndex++] = mergeList[tempLeft++];
+            }
+        }
+
+        /**
+         * 如果左边的值还没放完, 即右边序列的值都放入到临时数组中
+         * 那么直接将左边序列剩下的值放入临时数组中
+         */
+        while (tempLeft <= middle) {
+            temp[tempIndex++] = mergeList[tempLeft++];
+        }
+
+        /**
+         * 反之则将右边序列剩下的值放入临时数组中
+         */
+        while (right >= tempRight) {
+            temp[tempIndex++] = mergeList[tempRight++];
+        }
+
+        /**
+         * 将临时数组排好序的内容放回原数组中
+         */
+        tempIndex = 0;
+        while (left <= right) {
+            mergeList[left++] = temp[tempIndex++];
+        }
+    }
+
 }
