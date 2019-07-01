@@ -1,4 +1,6 @@
-package com.dai.sort;
+package com.dai.sort.sortExample;
+
+import java.util.Arrays;
 
 /**
  * Created by dh on 2018/9/6.
@@ -63,7 +65,7 @@ public class HeapifySort {
             return;
         }
         //建立一个大根堆
-        maxHeapify(arrays, arrays.length - 1);
+        maxHeapify(arrays, arrays.length);
 		//堆排序要建立在arrays已经是大根堆的情况下,所以上面需要进行一次堆排得到大根堆
         //大根堆的第一个元素就是最大值，将最大值与最后位置上的值进行交换后，再进行堆排序
         for (int i = arrays.length - 1; i > 0; i--) {
@@ -76,5 +78,11 @@ public class HeapifySort {
 
     }
 
+
+    public static void main(String[] args) {
+        Integer[] integers = {1, 3, 50, 20, 15, 12, 33, 31, 25, 70};
+        sort(integers);
+        Arrays.stream(integers).forEach(System.out::println);
+    }
 
 }
