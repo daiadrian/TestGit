@@ -1,0 +1,10 @@
+server:
+  port: 9001
+
+spring:
+  mail:
+    host: dai.smtp.com #SMTP服务器地址
+    username: dai #登陆账号
+    password: 123456 #登陆密码（或授权码）
+    properties:
+      from: dai@smtp.com #邮件发信人（即真实邮箱）
