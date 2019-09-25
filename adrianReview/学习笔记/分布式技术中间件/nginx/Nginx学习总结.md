@@ -724,7 +724,7 @@ upstream dh {
 | 加权轮询     | weight值越大，分配到的访问几率越高                           |
 | ip_hash      | 每个请求按访问IP的hash结果分配，这样来自同一个IP的请求将会固定访问一个后端服务器 |
 | url_hash     | 按照访问URL的hash结果来分配请求，这样每个URL定向到同一个后端服务器 |
-| least_conn   | 最好连接数，哪个机器的连接数少就分发给哪个机器               |
+| least_conn   | 最少连接数，哪个机器的连接数少就分发给哪个机器               |
 | hash关键数值 | hash自定义的key来分发请求                                    |
 
 ```nginx
