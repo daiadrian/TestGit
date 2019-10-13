@@ -6,9 +6,9 @@ public class Singleton {
 
     private static volatile Singleton instance = null;
 
-    public Singleton getInstance() {
+    public static Singleton getInstance() {
         if (null == instance) {
-            synchronized (Singleton.class) {
+            synchronized (instance) {
                 if (null == instance) {
                     instance = new Singleton();
                 }
