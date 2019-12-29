@@ -319,6 +319,113 @@ Eureka 是用于服务注册和发现的组件。分为 Eureka Server 和 Eureka
 
 
 
+### Eureka配置详解
+
+POM文件相关：
+
+```xml
+<!-- eureka server: 提供服务发现与服务注册 -->
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
+    </dependency>
+</dependencies>
+```
+
+
+
+YML配置文件：
+
+#### Server端配置
+
+```yml
+# 建议不要用TAB键, 尽量使用空格键缩进
+#配置服务端口
+server:
+  port: 8761
+
+# 配置 Eureka Server 相关
+##因为此服务作为 Eureka Server, 所以当前服务不需要注册到注册中心
+##同样的也不需要获取 Eureka Server 上的注册列表信息
+eureka:
+  instance:
+    hostname: localhost
+    #多久没收到心跳就剔除服务的时间配置, 默认90秒
+    lease-expiration-duration-in-seconds: 90
+  server:
+    enable-self-preservation: false # 关闭自我保护模式(默认为打开)
+    eviction-interval-timer-in-ms: 1000 # 扫描失效服务的间隔时间(默认为60*1000ms)  
+  client:
+    register-with-eureka: false #是否注册到 Eureka Server
+    fetch-registry: false #是否需要发现服务注册列表信息
+    #eureka 服务注册中心的地址, 集群方式用逗号分隔
+    #service-url是一个Map
+    #defaultZone就是Eureka服务所在的区域,通常是服务的url列表
+    #默认的defaultZone是 (defaultZone:http://localhost:8761/eureka/)
+    service-url:
+      defaultZone:
+        http://${eureka.instance.hostname}:${server.port}/eureka/
+        # 集群配置: defaultZone中配置其他几台服务器的地址,逗号分隔
+        #如: defaultZone: http://eureka8082.com:8082/eureka/,http://eureka8083.com:8083/eureka/
+```
+
+
+
+#### client端配置
+
+```yml
+# 建议不要用TAB键, 尽量使用空格键缩进
+#配置服务端口
+server:
+  port: 8081
+
+# 服务的名称, 这个必须配置, 用于服务的发现别名
+spring:
+  application:
+    name: eureka-client
+  cloud:
+    loadbalancer:
+      retry:
+        enabled: true #开启Spring Cloud的重试功能  
+
+# 配置 Eureka client 相关; 配置Eureka Sever的url列表
+eureka:
+  client:
+    service-url:
+      defaultZone:
+        http://localhost:8761/eureka/
+    registry-fetch-interval-seconds: 30 #指向注册中心获取注册实例列表的时间间隔,默认30s    
+  instance:
+  #客户端发送心跳时间的时间间隔, 默认30秒
+    lease-renewal-interval-in-seconds: 30
+    hostname: localhost
+
+#ribbon的超时时间, ribbon的一些配置在通用配置 CommonClientConfigKey 类中
+ribbon:
+  ReadTimeout: 3000
+  ConnectTimeout: 3000
+  MaxAutoRetries: 1 #同一台实例最大重试次数,不包括首次调用
+  MaxAutoRetriesNextServer: 1 #重试负载均衡其他的实例最大重试次数,不包括首次调用
+  OkToRetryOnAllOperations: false  #是否所有操作都重试
+  ServerListRefreshInterval: 30000 #设置Ribbon缓存的时间,默认30s
+
+```
+
+
+
+注解配置：
+
+​		spring cloud中 Discovery Service有许多种实现（eureka、consul、zookeeper等等）
+
+- @EnableDiscoveryClient 基于 spring-cloud-commons
+
+- @EnableEurekaClient 基于 spring-cloud-netflix；该注解只适用于Eureka作为注册中心
+
+
+
+
+
 ## Ribbon负载均衡
 
 ### 简介
@@ -332,7 +439,7 @@ Eureka 是用于服务注册和发现的组件。分为 Eureka Server 和 Eureka
 
 ​		Ribbon就是将负载均衡的逻辑封装到 Eureka Client 中，并且运行在客户端的进程里。Ribbon可以和RestTemplate或者Feign结合使用
 
-### 负载均衡源码追踪
+### Ribbon配置类
 
 1. `RibbonLoadBalancerClient` 是处理负载均衡的请求的
 2. 通过 `ILoadBalancer` 来保存和获取 Server 注册列表信息的，具体使用的是实现类：`DynamicServerListLoadBalancer`
@@ -379,6 +486,136 @@ IRule默认的实现类：（默认使用轮询）
 
 
 
+### 自定义负载均衡算法
+
+> 自定义算法：每个服务调用3次后再进行轮询
+
+```java
+public class MyRule extends AbstractLoadBalancerRule {
+
+    private static int total = 0;
+    private static int currentIndex = 0;
+
+    public Server choose(ILoadBalancer lb, Object key) {
+        if (lb == null) {
+            return null;
+        }
+        Server server = null;
+
+        while (server == null) {
+            if (Thread.interrupted()) {
+                return null;
+            }
+            List<Server> upList = lb.getReachableServers();
+            List<Server> allList = lb.getAllServers();
+
+            int serverCount = allList.size();
+            if (serverCount == 0) {
+                return null;
+            }
+
+            int index = currentIndex;
+            server = upList.get(index);
+
+            if (server == null) {
+                Thread.yield();
+                continue;
+            }
+
+            if (total < 2) {
+                //如果轮询小于三次,那么继续访问之前的server
+                total++;
+            } else {
+                //当前下标+1
+                currentIndex++;
+                if (currentIndex >= serverCount) {
+                    //重新开始轮询
+                    currentIndex = 0;
+                }
+                //将访问次数置为0
+                total = 0;
+            }
+
+            if (server.isAlive()) {
+                return (server);
+            }
+            server = null;
+            Thread.yield();
+        }
+        return server;
+    }
+
+    @Override
+    public Server choose(Object key) {
+        return choose(getLoadBalancer(), key);
+    }
+
+    @Override
+    public void initWithNiwsConfig(IClientConfig clientConfig) {
+        // TODO Auto-generated method stub
+    }
+}
+```
+
+
+
+自定义实现类的应用
+
+```java
+@SpringBootApplication
+@EnableEurekaClient
+@RibbonClient(name = "eureka-client", configuration = MyRule.class)
+public class EurekaClientApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(EurekaClientApplication.class,args);
+    }
+}
+```
+
+
+
 ## Feign声明式调用
 
-​		Feign 是采用了声明式API接口的风格，将HTTP客户端绑定到其内部，使客户端调用过程变得简单
+### 简介		
+
+​		Feign 是采用了声明式API接口的风格，将HTTP客户端绑定到其内部，使客户端调用过程变得简单。Feign是声明式、模板化的HTTP客户端，可以帮助我们更加便捷、优雅地调用HTTP API
+
+​		Feign通过处理注解生成Request模板，从而简化HTTP API的开发；在发送Request请求之前，Feign 通过处理注解的方式替换掉Request模板中的参数，生成真正的 Request ，并交给 Java Http 客户端去处理。开发者只需要关注Feign的注解模板开发，而不用去关注Http请求本身
+
+- Feign 采用的是基于接口的注解；Feign通过接口方法调用REST服务，在Eureka中查找对应的服务
+- Feign 整合了Ribbon，具有负载均衡的能力
+- 整合了Hystrix，具有熔断的能力
+
+
+
+### 小结
+
+1. 当Feign接口的方法被调用时，通过JDK代理来生成具体的 RequestTemplate 模板对象；然后根据 RequestTemplate 再生成 HTTP 请求的 Request 对象
+2. 客户端默认的网络请求框架是：`HttpURLConnection`；可以替换为 HttpClient 或者 OkHttp
+3. Feign 是通过 `LoadBalanceClient` 类来结合 Ribbon 做负载均衡的
+
+
+
+## Hystrix熔断器
+
+### 简介
+
+​		Hystrix是一个用于处理分布式系统延迟和容错的开源库。分布式系统中，避免不了服务间的调用失败，比如超时，异常等。Hystrix能保证在出现问题的时候，不会导致整体服务失败，**避免级联故障**，以提高分布式系统的弹性
+
+​		当系统中异常发生时，断路器给调用返回一个符合预期的，可处理的FallBack，这样就可以避免长时间无响应或抛出异常，使故障不能再系统中蔓延，造成雪崩
+
+​		熔断机制的原理是：<font color=red>**服务调用方**</font>可以自己进行判断某些服务反应慢或者存在大量超时的情况时，能够主动熔断，防止整个系统被拖垮（<font color=blue>注意：熔断器是在服务的调用者这边，而不是在服务的提供者中</font>）
+
+
+
+### Hystrix的设计原则
+
+1. 防止单个服务的故障耗尽整个服务的 Servlet 容器的线程资源（如Tomcat）
+2. 快速失败机制，如果某个服务出现了故障，则调用该服务的请求快速失败，而不是线程等待
+3. 提供回退方案（fallback），在请求发生故障时，提供设定好的回退方案
+   - 回退方案也就是降级的处理，请求发生故障或者熔断器打开的时候，就可以执行 fallback 的快速失败
+4. 使用熔断机制，防止故障扩散到其他服务
+5. 提供熔断器的监控组件（Dashboard），可以实时监控熔断器的状态
+
+
+
