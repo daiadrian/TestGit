@@ -1,4 +1,4 @@
-### maven的构建过程
+## Maven的构建过程
 
 1. clean 清理：删除以前编译的结果
 2. validate 验证：验证项目是否正确且所有必须信息是可用的
@@ -11,9 +11,57 @@
 
 
 
+## DependencyManagement
+
+### 锁定版本
+
+```xml
+<!-- dependencyManagement的作用是：锁定版本，且子模块继承之后不需要再写 groupId 和 版本号 -->
+<dependencyManagement>
+    <dependencies>
+        <!-- SpringBoot 版本选择：2.2.2.RELEASE -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-parent</artifactId>
+            <version>2.2.2.RELEASE</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+
+        <!-- SpringCloud 版本选择：Hoxton.SR1 -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-dependencies</artifactId>
+            <version>Hoxton.SR1</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+
+        <!-- SpringCloud Alibaba 依赖 -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+            <version>2.1.0.RELEASE</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+```
 
 
-### 依赖
+
+1. `dependencyManagement`：<font color=red>锁定版本，且子模块继承之后不需要再写 groupId 和 版本号</font>
+2. `dependencyManagement` 是 Maven 用来提供一种管理依赖版本号的方式。通常会在一个项目的最顶层的父Pom文件中使用该元素
+3. 在Pom文件中使用了 `dependencyManagement`  元素能让所有在子项目中引用一个依赖而不用显示列出版本号。<font color=blue>Maven 会沿着父子层次向上走，**直到找到一个拥有 `dependencyManagement` 元素的项目**，然后它就会使用该元素指定的版本号</font>
+4. <font color=red>使用了 `dependencyManagement` 就可以使多个子项目都引用同一样依赖，可以**避免在每个使用的子项目中都去声明版本号**</font>。这样当想要升级或者切换版本时，就只需要在父Pom中更新即可。如果子项目需要另外的版本号，则在自己的Pom文件中声明版本号即可
+5. <font color=blue>`dependencyManagement` 只是声明了依赖，**并不会实现引入**，因此子项目中需要显示的声明需要使用到的依赖，才会引入相关Jar包</font>
+6. 如果不在子项目中声明依赖，是不会从父项目中继承依赖的；只有当子项目中写入该依赖，并且没有指定版本号，才会从父项目中继承该依赖，并且version和scope都读取自父Pom文件
+7. 如果子项目中指定其他版本号，那么就会使用子项目中指定版本号的jar
+
+
+
+## 依赖
 
 1. compile 依赖范围
 
@@ -74,7 +122,13 @@
 
 
 
-### 打包成可运行jar包
+
+
+
+
+
+
+## Springboot打包插件
 
 1. 添加 maven 的打包插件
 
@@ -118,3 +172,8 @@
    ```
 
 2. 然后执行 mvn package 命令进行打包操作
+
+
+
+
+
