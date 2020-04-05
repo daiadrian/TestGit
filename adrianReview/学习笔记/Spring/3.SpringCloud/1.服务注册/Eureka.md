@@ -24,7 +24,44 @@
 
 - 客户端在程序关闭时可以向注册中心发送下线请求。Eureka Server 会将该实例的信息从注册列表信息中删除
 
-> 注意：<font color=red>服务下线不会自动调用</font>，需要在程序关闭时显示调用：`DiscoveryManager.getInstance().shutdownComponent();`
+
+
+#### <font color=red>**服务主动下线的操作**</font>
+
+1. 服务程序关闭时显示调用 `DiscoveryManager.getInstance().shutdownComponent();`
+
+2. <font color=orange>**`shutdown` 端点**（可用）</font>
+
+   - 首先在 yml 配置文件加入
+
+     ```yml
+     management:
+       endpoint:
+         shutdown:
+           enabled: true
+       endpoints:
+         web:
+           exposure:
+             include: shutdown
+     ```
+
+   - 发送POST请求到该端点：`curl -X http://需要停止的服务域名:端口号/actuator/shutdown`
+
+   - 这种方式是借助 Spring Boot 应用的 Shutdown hook 去实现的
+
+3. <font color=orange>**`service-registry` 端点（推荐）**</font>
+
+   - 首先在yml文件加入，暴露该端点
+
+     ```yml
+     management:
+       endpoints:
+         web:
+           exposure:
+             include: service-registry
+     ```
+
+   - 
 
 
 

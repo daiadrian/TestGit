@@ -772,6 +772,44 @@ private static HystrixProperty<Boolean> getProperty(String propertyPrefix, Hystr
 
 
 
+## Hystrix和Ribbon超时时间
+
+​		首先注意，这里的<font color=red> Hystrix 超时时间是服务调用的超时时间，是在服务消费者侧。Ribbon 的超时时间也是在服务的消费者侧</font>
+
+​		服务的提供方是没有超时时间配置的，只要调用超时才会导致异常或者 fallback 的
+
+​		一个微服务中对同一个接口同时配置了 Hystrix 与 Ribbon 两个超时时间，则在接口调用的时候，两个计时器会同时读秒；建议配置Hystrix的超时时间要大于ribbon的超时时间，否则会在接口调用还未完成的时候直接进入回调方法
+
+
+
+<font color=orange>下面配置在**服务消费者侧**</font>
+
+```yml
+# 设置feign客户端超时时间(OpenFeign默认支持ribbon)
+ribbon:
+  # 指的是建立连接所用的时间,适用于网络状态正常的情况下,两端连接所用的时间
+  ReadTimeout: 60000
+  # 指的是建立连接后从服务器读取到可用资源所用的时间
+  ConnectTimeout: 60000
+
+feign:
+  hystrix:
+    enabled: true
+
+# 配置 Hystrix 请求超时时间
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 60000
+```
+
+
+
+
+
 # HystrixDashboard仪表盘
 
 ​		仪表盘提供了准实时的调用监控信息，Hystrix 会持续的记录所有通过 Hystrix 发起的请求的执行信息，并以统计报表和图形的形式展现给用户（包括每秒执行的请求数，其中成功了多少和失败了多少）
@@ -851,6 +889,4 @@ public ServletRegistrationBean getServlet() {
 **这里的内容配置在服务提供者**
 
 **这里的内容配置在服务提供者**
-
-
 

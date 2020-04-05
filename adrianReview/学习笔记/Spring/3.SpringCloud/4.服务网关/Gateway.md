@@ -10,7 +10,7 @@
 
 
 
-### 特性
+**<font color=orange>特性</font>**
 
 1. 动态路由：能够匹配任何请求属性
 
@@ -24,7 +24,7 @@
 
 
 
-### 与Zuul的区别
+**<font color=orange>与Zuul的区别</font>**
 
 ​		Zuul 1.x 基于 Servlet2.5 使用阻塞架构，不支持任何长连接（如WebSocket），每次I/O操作都是从工作线程中选择一个执行，请求线程被阻塞到工作线程完成（与Nginx设计理念比较像）
 
@@ -268,6 +268,134 @@ spring:
 ```
 
 匹配请求参数中带有 `username` 的请求，并且该参数的值要满足后面的正则表达式内容
+
+
+
+## 过滤器配置（内置过滤器，留意*）
+
+​		内置过滤器比较少用到，参考 GateWay 官方文档使用 
+
+`https://cloud.spring.io/spring-cloud-static/spring-cloud-gateway/2.2.2.RELEASE/reference/html/#gatewayfilter-factories`
+
+### *SetPath Filter
+
+```yml
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: setpath_route
+        uri: http://localhost:8080
+        predicates:
+        - Path=/red/**
+        filters:
+        - SetPath=/**
+```
+
+​		设置了 `SetPath` 过滤器，那么对于的请求路径 `/red/blue`，这会将路径设置为`/blue` **发出下游请求**之前的路径
+
+
+
+## 自定义全局过滤器（重点）
+
+<font color=red>针对 `2.2.2.RELEAS` 版本，不同版本可能不一致</font>
+
+```java
+@Component
+@Slf4j
+public class MyFilter implements GlobalFilter, Ordered {
+
+    /**
+     * 过滤器真正执行的方法
+     * @param exchange
+     * @param chain
+     * @return
+     */
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        log.info("======> 自行实现的过滤器, 请求进来了");
+        ServerHttpRequest request = exchange.getRequest();
+        String token = request.getQueryParams().getFirst("dai_token");
+        if (StringUtils.isEmpty(token)) {
+            log.info("------> 过滤没有携带 token 的请求 ");
+            ServerHttpResponse response = exchange.getResponse();
+            response.setStatusCode(HttpStatus.NOT_ACCEPTABLE);
+            return exchange.getResponse().setComplete();
+        }
+        log.info("请求的 token 内容: " + token);
+        return chain.filter(exchange);
+    }
+
+    /**
+     * 过滤器的执行顺序 (执行的优先级)
+     * 数值越小, 优先级越高
+     *
+     * @return
+     */
+    @Override
+    public int getOrder() {
+        return 0;
+    }
+}
+```
+
+
+
+## 开启服务名动态路由
+
+```yml
+server:
+  port: 9527
+
+spring:
+  application:
+    name: gateway-9527
+  cloud:
+    gateway:
+      discovery:
+        locator:
+        #开启从注册中心动态创建路由的功能(默认是关闭的), 可以使用微服务名称进行路由
+          enabled: true  
+      routes:
+        - id: department-consumer   #路由ID,唯一; 建议使用服务名称
+          # lb 是loadbalance, 后续加的是注册到注册中心上的服务名称
+          uri: lb://DEPARTMENT-CONSUMER  
+          predicates:
+            - Path=/consumer/dept/**     #断言, 路径匹配进行路由
+            - Query=username
+```
+
+
+
+## HTTP超时配置
+
+```yml
+spring:
+  application:
+    name: gateway-9527
+  cloud:
+    gateway:
+      # 全局的超时时间配置
+      httpclient:
+        # 连接超时时间, 以毫秒为单位
+        connect-timeout: 1000
+        # 响应超时时间 必须指定为 java.time.Duration
+        response-timeout: 5s
+      discovery:
+        locator:
+          enabled: true  #开启从注册中心动态创建路由的功能(默认是关闭的), 可以使用微服务名称进行路由
+      routes:
+        - id: department-consumer   #路由ID,唯一; 建议使用服务名称
+          #uri: http://localhost:9014     #匹配后的路由地址
+          uri: lb://DEPARTMENT-CONSUMER
+          predicates:
+            - Path=/consumer/dept/**     #断言, 路径匹配进行路由
+            - Query=username
+          metadata:
+            # 对于指定路由的超时时间, 这里的时间都是毫秒为单位
+            response-timeout: 200
+            connect-timeout: 200
+```
 
 
 
