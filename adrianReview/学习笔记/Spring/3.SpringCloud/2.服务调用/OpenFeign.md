@@ -64,6 +64,32 @@ ribbon:
   ReadTimeout: 5000
   # 指的是建立连接后从服务器读取到可用资源所用的时间
   ConnectTimeout: 5000
+  
+
+feign:
+  client:
+    config:
+      #这里是指所有Feign接口的默认配置
+      #可以指定某一个服务的名称
+      default:
+        connectTimeout: 5000 # 相当于Request.Options
+        readTimeout: 5000 # 相当于Request.Options
+        # 配置Feign的日志级别，相当于代码配置方式中的Logger
+        loggerLevel: full
+        # Feign的错误解码器，相当于代码配置方式中的ErrorDecoder
+        errorDecoder: com.dai.DaiErrorDecoder
+        decode404: false
+  compression:
+    request:
+      #开启对请求的压缩
+      enabled: true
+	  #用于支持的媒体类型列表，默认是text/xml、application/xml以及application/json
+      mime-types: text/xml,application/xml,application/json
+      #用于设置请求的最小阈值，默认是2048
+      min-request-size: 2048
+    response:
+      #开启对响应的压缩
+      enabled: true        
 ```
 
 
@@ -125,10 +151,10 @@ ribbon:
 
 <font color=blue>**Feign 的日志级别：**</font>
 
-- NONE：默认的，不显示任何日志
-- BASIC：仅记录请求方法、URL、响应状态码和执行时间
+- NONE【性能最佳，适用于生产】：默认的，不显示任何日志
+- BASIC【适用于生产环境追踪问题】：仅记录请求方法、URL、响应状态码和执行时间
 - HEADERS：除了 BASIC 中的内容，还包括了请求和响应的头信息
-- FULL：除了 HEADER 和 BASIC 中的内容，还包括了请求和响应的正文及元数据
+- FULL【比较适用于开发及测试环境定位问题】：除了 HEADER 和 BASIC 中的内容，还包括了请求和响应的正文及元数据
 
 
 
@@ -165,4 +191,45 @@ logging:
 ```
 
 
+
+细粒度的配置方式：
+
+```java
+@FeignClient(name = "microservice-provider-user", 
+             configuration = FeignConfig.class)
+public interface UserFeignClient { 
+    @GetMapping("/users/{id}") 
+    User findById(@PathVariable("id") Long id);
+}
+/**
+ * 该Feign Client的配置类，注意：
+ * 1. 该类可以独立出去；
+ * 2. 该类上也可添加@Configuration声明是一个配置类；
+ * 			配置类上也可添加@Configuration注解，声明这是一个配置类；
+ * 			但此时千万别将该放置在主应用程序上下文@ComponentScan所扫描的包中，
+ * 			否则，该配置将会被所有Feign Client共享，无法实现细粒度配置！
+ */
+class FeignConfig {  
+    @Bean 
+    public Logger.Level logger() {
+        return Logger.Level.FULL; 
+    }
+}
+```
+
+注意：（对于要作为独立的配置类来说）
+
+1.  Ribbon 使用 Java 代码自定义配置时也必须防止配置类在 `@ComponentScan` 上下文内 
+2.  Feign 使用 Java 代码自定义配置时也必须防止配置类在 `@ComponentScan` 上下文内；否则会被**所有Feign Client共享** ，相当于变成通用的配置了
+
+
+
+配置完Feign记录的日志，还需要配置项目的日志级别
+
+```yaml
+# 指定Client的日志级别
+logging:
+  level:
+	com.dai.cloud.feign.UserFeignClient: debug
+```
 
