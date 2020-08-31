@@ -128,11 +128,11 @@ public class DepartmentConsumer9013 {
 
 
 
-### Feign超时控制
+### OpenFeign超时控制
 
-​		Feign 客户端默认的等待时间是 1 秒，超过 1 秒没有成功调用的时候，Feign 会直接返回 timeout 的超时异常报错
+​		OpenFeign 客户端默认的等待时间是 10 秒，超过 10 秒没有成功调用的时候，Feign 会直接返回 timeout 的超时异常报错
 
-​		因为 Feign 是内置 Ribbon 的，所以可以通过配置 Ribbon 的超时时间来控制超时异常的问题
+​		OpenFeign 和 Ribbon 的超时时间是冲突的，两者的超时时间长短是以最短的超时时间决定的
 
 ```yml
 # 设置feign客户端超时时间 ( OpenFeign 默认支持 Ribbon )
@@ -141,6 +141,15 @@ ribbon:
   ReadTimeout: 5000
   # 指的是建立连接后从服务器读取到可用资源所用的时间
   ConnectTimeout: 5000
+  
+feign:
+  client:
+    config:
+      #这里是指所有Feign接口的默认配置
+      #可以指定某一个服务的名称
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
 ```
 
 

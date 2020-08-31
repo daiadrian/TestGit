@@ -175,5 +175,31 @@
 
 
 
+## Maven推送远程仓库
 
+```xml
+<!-- 私库依赖项定义 -->
+<repositories>
+    <repository>
+        <!-- 远程仓库ID -->
+        <id>maven-public</id>
+        <name>Team Nexus Repository</name>
+        <url>https://ip:prot/repository/maven-public/</url>
+    </repository>
+</repositories>
+<distributionManagement>
+    <repository>
+        <id>maven-releases</id>
+        <name>maven-releases</name>
+        <url>https://ip:prot/repository/maven-releases/</url>
+        <uniqueVersion>true</uniqueVersion>
+    </repository>
+    <!-- snapshotRepository 是快照版本,不稳定的开发版本 -->
+    <snapshotRepository>
+        <id>maven-snapshots</id>
+        <name>maven-snapshots</name>
+        <url>https://ip:prot/repository/maven-snapshots/</url>
+    </snapshotRepository>
+</distributionManagement>
+```
 

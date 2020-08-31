@@ -7,7 +7,7 @@
 
 
 
-​		Ribbon是Netflix发布的负载均衡器，它有助于控制HTTP和TCP客户端的行为。为Ribbon配置服务提供者地址列表后，Ribbon就可以基于某种负债均衡算法，自动地帮助服务消费者去请求。Ribbon默认为我们提供了很多的负载均衡算法，同时也支持自定义的负载均衡算法
+​		Ribbon是Netflix发布的负载均衡器，它有助于控制HTTP和TCP客户端的行为。为Ribbon配置服务提供者地址列表后，Ribbon就可以基于某种负载均衡算法，自动地帮助服务消费者去请求。Ribbon默认为我们提供了很多的负载均衡算法，同时也支持自定义的负载均衡算法
 
 ​		Ribbon 将负载均衡的逻辑封装到 Eureka Client 中，并且运行在客户端的进程里。Ribbon可以和`RestTemplate` 或者 Feign 结合使用
 
