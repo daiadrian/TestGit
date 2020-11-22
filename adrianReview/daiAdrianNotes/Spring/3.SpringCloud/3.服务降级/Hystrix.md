@@ -818,7 +818,7 @@ hystrix:
 
 ## 仪表盘的图形说明
 
-![HystrixDashboard监控说明图](.\HystrixDashboard监控说明图.png)
+![HystrixDashboard监控说明图](.\images\HystrixDashboard监控说明图.png)
 
 
 

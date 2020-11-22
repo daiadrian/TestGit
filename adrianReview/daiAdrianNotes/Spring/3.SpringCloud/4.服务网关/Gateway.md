@@ -32,17 +32,21 @@
 
 ## 核心概念
 
-### 路由
+### 路由(Route)
 
 ​		路由是构建网关的基本模块；它由ID，目标URI，一系列的断言和过滤器组成，如果断言为 true 则匹配该路由
 
-### 断言
+
+
+### 断言/谓词(Predicate)
 
 ​		开发人员可以匹配 HTTP 请求中的所有内容（如请求头和请求参数），如果请求与断言匹配则进行路由；跟 JDK8 中的 Predicate 的用法一致
 
-### 过滤
 
-​		**Filter**：可以使用过滤器在请求前后做其他事情（如鉴权，日志输出，协议转换，流量监控等）
+
+### 过滤器(Filter)
+
+​		**Filter**：可以使用过滤器在请求前后做其他事情（如鉴权，日志输出，协议转换，流量监控等），即在发送请求到下游之前或者之后修改请求(参数)或者响应(参数)
 
 
 
@@ -59,6 +63,14 @@
 
 
 ## 路由断言配置（留意*号）
+
+<font color=red>多个路由谓词组合是 **`and` 的逻辑**组合关系</font>
+
+`Spring Cloud Gateway`提供的内置的路由谓词工厂如下：
+
+![谓词工厂](\2.Gateway谓词工厂.png)
+
+
 
 ### 配置方式
 
@@ -94,7 +106,9 @@
 
 
 
-### After Predicate 
+### 日期谓词校验
+
+#### After Predicate 
 
 ​		`After Predicate` 工厂有一个参数，一个 `datetime`（其是 Java `ZonedDateTime` ，这里的时区不是北京时间）
 
@@ -119,13 +133,13 @@ ZoneDateTime time = ZoneDateTime.now();
 
 
 
-### Before Predicate
+#### Before Predicate
 
 ​		和 `After Predicate` 配置一致，然后是在配置时间之前的请求都会匹配放行；但其之后的请求都不会匹配
 
 
 
-### Between Predicate
+#### Between Predicate
 
 ​		`Between Predicate`工厂有两个参数，`datetime1` 和`datetime2` （这两个都 Java `ZonedDateTime`对象）。该断言匹配在 `datetime1` 之后和 `datetime2` 之前发生的请求 
 
@@ -139,6 +153,8 @@ spring:
         predicates:
         - Between=2020-03-28T21:20:02.923+08:00[Asia/Shanghai], 2020-03-28T21:28:02.923+08:00[Asia/Shanghai]
 ```
+
+
 
 
 
@@ -158,6 +174,8 @@ spring:
 ```
 
 匹配 cookie 中是纯整数的请求
+
+
 
 
 
@@ -273,9 +291,43 @@ spring:
 
 ## 过滤器配置（内置过滤器，留意*）
 
-​		内置过滤器比较少用到，参考 GateWay 官方文档使用 
+内置过滤器比较少用到，参考 GateWay 官方文档使用 
 
 `https://cloud.spring.io/spring-cloud-static/spring-cloud-gateway/2.2.2.RELEASE/reference/html/#gatewayfilter-factories`
+
+
+
+目前`GatewayFilter`工厂的内建实现如下：
+
+|            ID             |                     类名                      | 类型 |                             功能                             |
+| :-----------------------: | :-------------------------------------------: | :--: | :----------------------------------------------------------: |
+|        StripPrefix        |        StripPrefixGatewayFilterFactory        | pre  | 移除请求URL路径的第一部分，例如原始请求路径是/order/query，处理后是/query |
+|         SetStatus         |         SetStatusGatewayFilterFactory         | post | 设置请求响应的状态码，会从org.springframework.http.HttpStatus中解析 |
+|     SetResponseHeader     |     SetResponseHeaderGatewayFilterFactory     | post |                  设置(添加)请求响应的响应头                  |
+|     SetRequestHeader      |     SetRequestHeaderGatewayFilterFactory      | pre  |                       设置(添加)请求头                       |
+|          SetPath          |          SetPathGatewayFilterFactory          | pre  |                      设置(覆盖)请求路径                      |
+|       SecureHeader        |       SecureHeadersGatewayFilterFactory       | pre  |       设置安全相关的请求头，见SecureHeadersProperties        |
+|        SaveSession        |        SaveSessionGatewayFilterFactory        | pre  |                        保存WebSession                        |
+|   RewriteResponseHeader   |   RewriteResponseHeaderGatewayFilterFactory   | post |                          重新响应头                          |
+|        RewritePath        |        RewritePathGatewayFilterFactory        | pre  |                         重写请求路径                         |
+|           Retry           |           RetryGatewayFilterFactory           | pre  |                    基于条件对请求进行重试                    |
+|        RequestSize        |        RequestSizeGatewayFilterFactory        | pre  | 限制请求的大小，单位是byte，超过设定值返回`413 Payload Too Large` |
+|    RequestRateLimiter     |    RequestRateLimiterGatewayFilterFactory     | pre  |                             限流                             |
+| RequestHeaderToRequestUri | RequestHeaderToRequestUriGatewayFilterFactory | pre  |                  通过请求头的值改变请求URL                   |
+|   RemoveResponseHeader    |   RemoveResponseHeaderGatewayFilterFactory    | post |                       移除配置的响应头                       |
+|    RemoveRequestHeader    |    RemoveRequestHeaderGatewayFilterFactory    | pre  |                       移除配置的请求头                       |
+|        RedirectTo         |        RedirectToGatewayFilterFactory         | pre  |            重定向，需要指定HTTP状态码和重定向URL             |
+|    PreserveHostHeader     |    PreserveHostHeaderGatewayFilterFactory     | pre  |          设置请求携带的属性preserveHostHeader为true          |
+|        PrefixPath         |        PrefixPathGatewayFilterFactory         | pre  |                     请求路径添加前置路径                     |
+|          Hystrix          |          HystrixGatewayFilterFactory          | pre  |                         整合Hystrix                          |
+|      FallbackHeaders      |      FallbackHeadersGatewayFilterFactory      | pre  |  Hystrix执行如果命中降级逻辑允许通过请求头携带异常明细信息   |
+|     AddResponseHeader     |     AddResponseHeaderGatewayFilterFactory     | post |                          添加响应头                          |
+|    AddRequestParameter    |    AddRequestParameterGatewayFilterFactory    | pre  |             添加请求参数，仅仅限于URL的Query参数             |
+|     AddRequestHeader      |     AddRequestHeaderGatewayFilterFactory      | pre  |                          添加请求头                          |
+
+`GatewayFilter`工厂使用的时候需要知道其ID以及配置方式，配置方式可以看对应工厂类的公有静态内部类`XXXXConfig`
+
+
 
 ### *SetPath Filter
 
@@ -399,3 +451,24 @@ spring:
 
 
 
+## 跨域配置
+
+网关可以通过配置来控制全局的CORS行为
+
+全局的CORS配置对应的类是`CorsConfiguration`，这个配置是一个URL模式的映射
+
+例如`application.yaml`文件如下：
+
+```yaml
+spring:
+  cloud:
+    gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "https://docs.spring.io"
+            allowedMethods:
+            - GET
+```
+
+在上面的示例中，对于所有请求的路径，将允许来自 `docs.spring.io` 并且是GET方法的CORS请求
